@@ -1,3 +1,9 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Evidencia
+
+
+@admin.register(Evidencia)
+class EvidenciaAdmin(admin.ModelAdmin):
+    list_display = ("cliente", "control", "subido_en")
+    list_filter = ("cliente", "control__tema")
