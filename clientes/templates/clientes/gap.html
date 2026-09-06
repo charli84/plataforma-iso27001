@@ -1,0 +1,37 @@
+{% extends "clientes/_base_portal.html" %}
+{% block titulo %}GAP de cumplimiento — {{ cliente.nombre }}{% endblock %}
+{% block contenido %}
+  <h1 style="margin-top:0;">GAP de cumplimiento ISO/IEC 27002:2022</h1>
+  <p style="color:#667085;">Estado de los {{ total }} controles evaluados para <strong>{{ cliente.nombre }}</strong>.</p>
+
+  <div class="tarjetas">
+    <div class="tarjeta"><div class="numero">{{ porcentaje_cumple }}%</div><div class="etiqueta">Cumplimiento global</div></div>
+    <div class="tarjeta"><div class="numero">{{ resumen.CUMPLE }}</div><div class="etiqueta">Cumple</div></div>
+    <div class="tarjeta"><div class="numero">{{ resumen.PARCIAL }}</div><div class="etiqueta">Cumple parcialmente</div></div>
+    <div class="tarjeta"><div class="numero">{{ resumen.NO_CUMPLE }}</div><div class="etiqueta">No cumple</div></div>
+    <div class="tarjeta"><div class="numero">{{ resumen.SIN_EVIDENCIA }}</div><div class="etiqueta">Sin evidencia</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Control</th>
+        <th>Tema</th>
+        <th>Estado</th>
+        <th>Calificación</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in filas %}
+        <tr>
+          <td>{{ fila.control.codigo }}</td>
+          <td>{{ fila.control.nombre }}</td>
+          <td>{{ fila.control.get_tema_display }}</td>
+          <td><span class="badge badge-{{ fila.estado }}">{{ fila.evaluacion.get_cumplimiento_display|default:"Sin evidencia" }}</span></td>
+          <td>{{ fila.evaluacion.calificacion|default:"—" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "clientes/_base_portal.html" %}
+{% block titulo %}Calendario de revisiones — {{ cliente.nombre }}{% endblock %}
+{% block contenido %}
+  <h1 style="margin-top:0;">Calendario de revisiones periódicas</h1>
+  <p style="color:#667085;">
+    Próxima fecha estimada de revisión para los controles que requieren revisión
+    recurrente (políticas, revisión independiente, gestión de vulnerabilidades,
+    etc.), calculada como última evaluación + periodicidad del control.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Control</th>
+        <th>Última evaluación</th>
+        <th>Cada cuánto se revisa</th>
+        <th>Próxima revisión</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.control.codigo }}</td>
+          <td>{{ item.control.nombre }}</td>
+          <td>{{ item.evaluacion.evaluado_en|date:"d-m-Y" }}</td>
+          <td>Cada {{ item.control.periodicidad_revision_meses }} meses</td>
+          <td>
+            {% if item.vencida %}
+              <span class="badge badge-NO_CUMPLE">Vencida — {{ item.proxima_revision|date:"d-m-Y" }}</span>
+            {% else %}
+              <span class="badge badge-CUMPLE">{{ item.proxima_revision|date:"d-m-Y" }} ({{ item.dias_restantes }} días)</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Todavía no hay controles evaluados con periodicidad de revisión definida.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if controles_sin_evaluar %}
+    <p style="color:#667085; margin-top:24px; font-size:13px;">
+      Estos controles tienen revisión periódica definida pero aún no tienen ninguna
+      evidencia evaluada, así que todavía no se puede calcular su próxima fecha:
+      {% for control in controles_sin_evaluar %}{{ control.codigo }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+    </p>
+  {% endif %}
+{% endblock %}

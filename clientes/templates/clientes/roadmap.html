@@ -1,0 +1,32 @@
+{% extends "clientes/_base_portal.html" %}
+{% block titulo %}Roadmap — {{ cliente.nombre }}{% endblock %}
+{% block contenido %}
+  <h1 style="margin-top:0;">Roadmap de certificación</h1>
+  <p style="color:#667085;">
+    Controles pendientes para <strong>{{ cliente.nombre }}</strong>, ordenados por urgencia
+    (sin evidencia y no conformes primero). Los que ya cumplen no aparecen aquí.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Control</th>
+        <th>Estado</th>
+        <th>Recomendación de la IA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in pendientes %}
+        <tr>
+          <td>{{ fila.control.codigo }}</td>
+          <td>{{ fila.control.nombre }}</td>
+          <td><span class="badge badge-{{ fila.estado }}">{{ fila.evaluacion.get_cumplimiento_display|default:"Sin evidencia" }}</span></td>
+          <td class="recos">{{ fila.evaluacion.recomendaciones|default:"Sube evidencia para este control y la IA generará recomendaciones específicas." }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4">No hay controles pendientes — felicitaciones, cumplimiento al 100%.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

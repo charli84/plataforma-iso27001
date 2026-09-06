@@ -137,6 +137,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "gap"
+LOGOUT_REDIRECT_URL = "login"
+
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",

@@ -1,0 +1,72 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{% block titulo %}Portal de cumplimiento{% endblock %}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      background: #f4f5f7;
+      color: #1f2430;
+    }
+    header {
+      background: #1f2937;
+      color: #fff;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header a { color: #fff; text-decoration: none; font-weight: 600; }
+    header nav a { margin-left: 20px; opacity: 0.85; font-weight: 400; }
+    header nav a.activo { opacity: 1; font-weight: 600; border-bottom: 2px solid #4f9cf9; }
+    header nav form { display: inline; margin-left: 20px; }
+    header nav button.salir {
+      background: none; border: none; color: #fff; opacity: 0.85; font: inherit;
+      cursor: pointer; padding: 0;
+    }
+    header nav button.salir:hover { opacity: 1; text-decoration: underline; }
+    main { max-width: 1000px; margin: 0 auto; padding: 32px; }
+    .tarjetas { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .tarjeta {
+      background: #fff; border-radius: 10px; padding: 18px 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex: 1; min-width: 140px;
+    }
+    .tarjeta .numero { font-size: 28px; font-weight: 700; }
+    .tarjeta .etiqueta { font-size: 13px; color: #667085; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #eef0f3; font-size: 14px; }
+    th { background: #fafbfc; font-size: 12px; text-transform: uppercase; color: #667085; letter-spacing: 0.04em; }
+    .badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .badge-CUMPLE { background: #dcfce7; color: #15803d; }
+    .badge-PARCIAL { background: #fef3c7; color: #b45309; }
+    .badge-NO_CUMPLE { background: #fee2e2; color: #b91c1c; }
+    .badge-PENDIENTE { background: #e0e7ff; color: #4338ca; }
+    .badge-SIN_EVIDENCIA { background: #f1f2f4; color: #667085; }
+    .mensajes { margin-bottom: 20px; }
+    .mensajes li { list-style: none; background: #fff3cd; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
+    .recos { font-size: 13px; color: #475467; max-width: 420px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="{% url 'gap' %}">Portal de cumplimiento{% if cliente %} · {{ cliente.nombre }}{% endif %}</a>
+    <nav>
+      <a href="{% url 'gap' %}" class="{% if request.resolver_match.url_name == 'gap' %}activo{% endif %}">GAP</a>
+      <a href="{% url 'roadmap' %}" class="{% if request.resolver_match.url_name == 'roadmap' %}activo{% endif %}">Roadmap</a>
+      <a href="{% url 'calendario' %}" class="{% if request.resolver_match.url_name == 'calendario' %}activo{% endif %}">Calendario</a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="salir">Salir</button></form>
+    </nav>
+  </header>
+  <main>
+    {% if messages %}
+      <ul class="mensajes">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block contenido %}{% endblock %}
+  </main>
+</body>
+</html>
