@@ -8,6 +8,8 @@ from django.utils import timezone
 from controles.models import Control
 from ia.models import Evaluacion
 
+from .models import Aplicabilidad
+
 # Orden de urgencia para el Roadmap: lo peor primero.
 PRIORIDAD_ESTADO = {
     "SIN_EVIDENCIA": 0,
@@ -40,6 +42,15 @@ def _ultima_evaluacion_por_control(cliente):
     return ultima_por_codigo
 
 
+def _no_aplicables_por_codigo(cliente):
+    """Controles marcados explícitamente como NO aplicables para este cliente
+    (Declaración de Aplicabilidad / SOA). Si un control no tiene registro
+    aquí, se asume que sí aplica — no hace falta declarar los 93 uno por uno,
+    solo las excepciones."""
+    no_aplicables = Aplicabilidad.objects.filter(cliente=cliente, aplica=False).select_related("control")
+    return {a.control.codigo: a for a in no_aplicables}
+
+
 @login_required
 def gap(request):
     cliente = _cliente_del_usuario(request)
@@ -52,27 +63,44 @@ def gap(request):
         return redirect("admin:index")
 
     ultima_por_codigo = _ultima_evaluacion_por_control(cliente)
+    no_aplicables_por_codigo = _no_aplicables_por_codigo(cliente)
 
     filas = []
     for control in Control.objects.all():
+        no_aplica = no_aplicables_por_codigo.get(control.codigo)
+        if no_aplica:
+            filas.append({
+                "control": control,
+                "evaluacion": None,
+                "estado": "NO_APLICA",
+                "justificacion": no_aplica.justificacion,
+            })
+            continue
+
         evaluacion = ultima_por_codigo.get(control.codigo)
         estado = evaluacion.cumplimiento if evaluacion else "SIN_EVIDENCIA"
         filas.append({"control": control, "evaluacion": evaluacion, "estado": estado})
 
-    total = len(filas)
+    aplicables = [f for f in filas if f["estado"] != "NO_APLICA"]
+    total_aplicable = len(aplicables)
     resumen = {
-        "CUMPLE": sum(1 for f in filas if f["estado"] == "CUMPLE"),
-        "PARCIAL": sum(1 for f in filas if f["estado"] == "PARCIAL"),
-        "NO_CUMPLE": sum(1 for f in filas if f["estado"] == "NO_CUMPLE"),
-        "PENDIENTE": sum(1 for f in filas if f["estado"] == "PENDIENTE"),
-        "SIN_EVIDENCIA": sum(1 for f in filas if f["estado"] == "SIN_EVIDENCIA"),
+        "CUMPLE": sum(1 for f in aplicables if f["estado"] == "CUMPLE"),
+        "PARCIAL": sum(1 for f in aplicables if f["estado"] == "PARCIAL"),
+        "NO_CUMPLE": sum(1 for f in aplicables if f["estado"] == "NO_CUMPLE"),
+        "PENDIENTE": sum(1 for f in aplicables if f["estado"] == "PENDIENTE"),
+        "SIN_EVIDENCIA": sum(1 for f in aplicables if f["estado"] == "SIN_EVIDENCIA"),
     }
-    porcentaje_cumple = round(100 * resumen["CUMPLE"] / total, 1) if total else 0
+    no_aplica_total = len(filas) - total_aplicable
+    # El % de cumplimiento se calcula solo sobre los controles APLICABLES
+    # (SOA): un control marcado "no aplica" no debe restar puntaje.
+    porcentaje_cumple = round(100 * resumen["CUMPLE"] / total_aplicable, 1) if total_aplicable else 0
 
     contexto = {
         "cliente": cliente,
         "filas": filas,
-        "total": total,
+        "total": len(filas),
+        "total_aplicable": total_aplicable,
+        "no_aplica_total": no_aplica_total,
         "resumen": resumen,
         "porcentaje_cumple": porcentaje_cumple,
     }
@@ -91,9 +119,13 @@ def roadmap(request):
         return redirect("admin:index")
 
     ultima_por_codigo = _ultima_evaluacion_por_control(cliente)
+    no_aplicables_por_codigo = _no_aplicables_por_codigo(cliente)
 
     pendientes = []
     for control in Control.objects.all():
+        if control.codigo in no_aplicables_por_codigo:
+            # No aplica para este cliente (SOA): no es una brecha pendiente.
+            continue
         evaluacion = ultima_por_codigo.get(control.codigo)
         estado = evaluacion.cumplimiento if evaluacion else "SIN_EVIDENCIA"
         if estado == "CUMPLE":
@@ -133,12 +165,15 @@ def calendario(request):
         return redirect("admin:index")
 
     ultima_por_codigo = _ultima_evaluacion_por_control(cliente)
+    no_aplicables_por_codigo = _no_aplicables_por_codigo(cliente)
     hoy = timezone.localdate()
 
     items = []
-    controles_con_periodicidad = Control.objects.filter(
-        periodicidad_revision_meses__isnull=False
-    )
+    controles_con_periodicidad = [
+        c
+        for c in Control.objects.filter(periodicidad_revision_meses__isnull=False)
+        if c.codigo not in no_aplicables_por_codigo
+    ]
     for control in controles_con_periodicidad:
         evaluacion = ultima_por_codigo.get(control.codigo)
         if evaluacion is None:
